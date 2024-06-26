@@ -22,8 +22,8 @@ func main() {
 	w := worker.New(c, "prompts", worker.Options{})
 
 	w.RegisterWorkflow(prompt.ChatBot)
-	activity := prompt.OLLamaAssistant(prompt.AssistantOptions{
-		URL: "http://localhost:11434/api/chat",
+	activity := prompt.FAQCanadaImmigration(prompt.AssistantOptions{
+		URL: "https://ahbarrios-faq-canada-immigration.hf.space/generate",
 	})
 	w.RegisterActivity(activity)
 

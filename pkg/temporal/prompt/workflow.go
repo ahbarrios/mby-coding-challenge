@@ -23,7 +23,7 @@ func ChatBot(ctx workflow.Context, req *Message) (string, error) {
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
-	ack, err := ollama(ctx, req)
+	ack, err := immigration(ctx, req)
 	if err != nil {
 		logger.Error("Get acknowledge failed.", "Error", err)
 		return "", nil
@@ -33,6 +33,14 @@ func ChatBot(ctx workflow.Context, req *Message) (string, error) {
 
 func ollama(ctx workflow.Context, req *Message) (ack string, err error) {
 	var a *OLLama
+	err = workflow.ExecuteActivity(ctx, a.Acknowledge, req.Content).Get(ctx, &ack)
+	return
+}
+
+// immigration is a cusstom activity assistant that it's been trained to acknowledge
+// Canada FAQ about the immigration process
+func immigration(ctx workflow.Context, req *Message) (ack string, err error) {
+	var a *Transformers
 	err = workflow.ExecuteActivity(ctx, a.Acknowledge, req.Content).Get(ctx, &ack)
 	return
 }

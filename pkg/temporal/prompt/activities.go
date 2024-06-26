@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type message struct {
@@ -35,6 +36,7 @@ type response struct {
 // E.g. Servers
 // - Ollama
 // - OpenAI
+// - Transformers
 //
 // [1]: https://platform.openai.com/docs/api-reference/chat
 type Assistant interface {
@@ -85,6 +87,55 @@ func (cfg *AssistantOptions) parse(body io.ReadCloser) (*response, error) {
 	}
 
 	return &res, nil
+}
+
+type Transformers struct {
+	AssistantOptions
+}
+
+// Acknowledge this is a custom transformers implementation using HuggingFace
+// Docker space made by me for this challenge [1].
+//
+// - [1]: https://huggingface.co/spaces/ahbarrios/faq-canada-immigration
+func (m *Transformers) Acknowledge(q string) (string, error) {
+	path, err := url.Parse(m.URL)
+	if err != nil {
+		return "", err
+	}
+
+	values := path.Query()
+	values.Add("text", q)
+	path.RawQuery = values.Encode()
+
+	res, err := http.Get(path.String())
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	bs, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var out struct {
+		Response string `json:"output"`
+	}
+	if err := json.Unmarshal(bs, &out); err != nil {
+		return "", err
+	}
+
+	return out.Response, nil
+}
+
+// FAQCanadaImmigration it creates and [Transformers] compatible [Assistant]
+//
+// - cfg.URL is required
+func FAQCanadaImmigration(cfg AssistantOptions) Assistant {
+	if cfg.URL == "" {
+		panic("URL is not present")
+	}
+	return &Transformers{cfg}
 }
 
 // OLLama implements [Assistant] for OLLama open source LLMs server
